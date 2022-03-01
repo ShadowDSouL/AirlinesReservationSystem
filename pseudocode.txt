@@ -1,0 +1,514 @@
+FUNCTION admin_option
+	PASS IN: nothing
+	DISPLAY “------ Admin Option ------”
+        DISPLAY “Press [1] - Add a flight”
+        DISPLAY “Press [2] - Modify a flight”
+        DISPLAY “Press [3] - Display all records”
+        DISPLAY “Press [4] – Logout”
+	PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION display_record
+PASS IN: nothing
+	DISPLAY “------------ Display Record -----------, new line
+            Press [1] - flight schedule by flight numbers, new line
+         	Press [2] - flight booked by customer, new line
+          	Press [3] - total ticket sold, new line
+            Press [4] - Back to "Admin Option", new line”
+	PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION admin
+	PASS IN: display_schedule
+	DOWHILE (True)
+		CALL: admin_option
+		PROMPT USER FOR admin_choice
+		DISPLAY "Enter your choice (Option 1 – 4): "
+		READ admin_choice
+		CASE OF admin_choice
+			= “1”: CALL: add_flight
+			= “2”: CALL: display_schedule
+     			   CALL: modify_flight
+	               CALL: display_schedule
+	        = “3”: DOWHILE (True)
+			            CALL: display_record
+				        PROMPT USER FOR display_choice
+				        DISPLAY “Enter your choice (Option 1 – 4):”
+				        READ display_choice
+				        CASE OF display_choice
+					        = “1”: CALL: record_1
+					        = “2”: CALL: record_2
+					        = “3”: CALL: record_3
+					        = “4”: BREAK THE LOOP
+					        OTHERWISE
+						        DISPLAY “Incorrect option!”
+						        DISPLAY “Please try again!”
+						ENDIF
+		   	        ENDDO
+	        = “4”: DISPLAY “Good bye Admin \(TnT)/”
+	               DISPLAY “Logout successfully.”
+		           BREAK THE LOOP
+	        OTHERWISE
+		  	    DISPLAY “Incorrect option!”
+			    DISPLAY "Please try again”
+    ENDDO
+    PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION add_flight
+	PASS IN: nothing
+	DOWHILE (True)
+		PROMPT USER FOR confirmation
+		READ confirmation
+		IF confirmation == “1” THEN
+			BREAK THE LOOP
+		ELSE
+            DECLARE VARIABLE flight_list, flight_master_list, flight_no, from_country, from_city,
+                                to_country, to_city, date_d, time_d, date_r, time_r, price
+            SET VARIABLE flight_list = []
+			READ flight_no, from_country, from_city, to_country, to_city, date_d, time_d, date_r, time_r, price
+			IF the length of flight_no == 6 THEN
+			    IF from_country and from_city is not empty THEN
+				    IF to_country and to_city is not empty THEN
+				        IF length of date_d == 6 and length of time_d == 7 THEN
+				            IF length of date_r == 6 and length of time_r == 7 THEN
+					            IF price is not empty THEN
+						            PUT flight_no INTO flight_list
+                                    PUT from_country INTO flight_list
+                                    PUT from_city INTO flight_list
+                                    PUT to_country INTO flight_list
+                                    PUT to_city INTO flight_list
+                                    PUT date_d INTO flight_list
+                                    PUT time_d INTO flight_list
+                                    PUT date_r INTO flight_list
+                                    PUT time_r INTO flight_list
+                                    PUT price INTO flight_list
+			                        DISPLAY (“The data has been added into flight list:”, flight_list)
+				                    OPENFILE airline.txt FOR APPEND,schedule
+					                LOOP data FROM first element TO last element IN flight_list, STEP 1
+					                IF data == flight_list[-1] THEN
+					                    WRITEFILE airline.txt, data
+					                ELSE
+					                    WRITEFILE airline.txt,data+“,”
+					                ENDIF
+					                WRITEFILE airline.txt, “new line”
+				                    CLOSEFILE airline.txt
+				                    DISPLAY “The new flight has been added into the schedule. New line”
+				                    BREAK THE LOOP
+			                    ELSE
+				                    DISPLAY (“The price cannot be emptied!”)
+                                    DISPLAY (“Please try again. New line")
+			                    ENDIF
+		                    ELSE
+			                    DISPLAY (“The "format" for return date and time is incorrect!”)
+                               	DISPLAY (“The format for date: NOV 11 and time:10.00AM. Please try again. New line”)
+		                    ENDIF
+		                ELSE
+			                DISPLAY (“The "format" for return date and time is incorrect!”)
+                            DISPLAY (“The format for date: NOV 11 and time:10.00AM. Please try again. New line”)
+		                ENDIF
+	                ELSE
+			            DISPLAY (“The destination cannot be emptied!”)
+                        DISPLAY (“Please try again. new line”)
+		            ENDIF
+	            ELSE
+		            DISPLAY (“The departure cannot be emptied!”)
+		            DISPLAY (“Please try again. New line”)
+	            ENDIF
+ 	        ELSE
+			    DISPLAY (“Incorrect data for the flight!”)
+			    DISPLAY (“Please try again. New line”)
+	        ENDIF
+        ENDIF
+    ENDDO
+    PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION modify_data
+    PASS IN: nothing
+    OPENFILE airline.txt FOR READ, schedule
+    DECLARE VARIABLE flight, airline, count, new_master_airline, newAirline
+    READFILE airline.txt, flight
+    SPLIT THE CONTENT IN airline.txt LINE BY LINE, airline
+    CLOSEFILE airline.txt
+    SET new_master_airline = []
+    LOOP element FROM first element TO last element IN airline, STEP 1
+	    SPLIT THE CONTENT IN element WITH “,”, newAirline
+        PUT newAirline INTO new_master_airline
+    ENDLOOP
+    SET count = 0
+    PROMPT USER FOR flight_no
+    DISPLAY “Enter a flight no:”
+    TURN flight_no INTO UPPER CASE
+    READ flight_no
+    LOOP list_in_list FROM first element TO last element IN new_master_airline
+	    IF (list_in_list [0] == flight_no) THEN
+			DISPLAY “Flight No:”, list_in_list [0]
+			DISPLAY “Departure Airport:”, list_in_list [1], “-”, list_in_list [2]
+			DISPLAY “Destination Airport:”, list_in_list [3], “-”, list_in_list [4]
+			DISPLAY “Departure Date and Time:”, list_in_list [5], “-”, list_in_list [6]
+			DISPLAY “Destination Date and Time:”, list_in_list [7], “-”, list_in_list [8]
+			DISPLAY “Price:”, list_in_list [9]
+			CALCULATE count
+				count = count + 1
+		ENDIF
+	IF (count == 0) THEN
+		DISPLAY “NO RECORD”
+		DISPLAY new line
+	IF (count >= 1) THEN
+		PROMPT USER FOR country_from, country_to
+		READ country_from, country_to
+		LOOP list_in_list FROM first element TO last element IN new_master_airline, STEP 1
+		    IF (list_in_list [0] == flight_no) THEN
+	            IF list_in_list [1] == country_from AND list_in_list [3] == country_to
+					DOWHILE (True)
+						DISPLAY “To modify which data:”
+						DISPLAY “Press [1] - Flight No”
+						DISPLAY “Press [2] - Country (Departure)”
+                        DISPLAY “Press [3] - City (Departure)”
+                        DISPLAY “Press [4] - Country (Destination)”
+                        DISPLAY “Press [5] - City (Destination)”
+                        DISPLAY “Press [6] - Date (Departure)”
+                        DISPLAY “Press [7] - Time (Departure)”
+                        DISPLAY “Press [8] - Date (Return)”
+                        DISPLAY “Press [9] - Time (Return)”
+                        DISPLAY “Press [10] – Price”
+	                    PROMPT USER FOR choice
+	                    DISPLAY“Enter your choice(Option 1 - 10):”
+	                    READ choice
+			            CASE OF choice
+			                = “1”:  DOWHILE (True)
+                                        PROMPT USER FOR newData
+                                        DISPLAY “Enter a new data for it"
+                                        IF (length of newData) == 6 THEN
+                                            BREAK THE LOOP
+                                        ELSE
+                                            DISPLAY “Incorrect format
+                                        ENDIF
+			                        BREAK THE LOOP
+			                        ENDDO
+			                = “2” OR “3” OR “4” OR “5”:
+			                        DOWHILE (True)
+				                        PROMPT USER FOR newData
+				                        DISPLAY “Enter a new data for it"
+                                        IF newData is not empty THEN
+					                        BREAK THE LOOP
+				                        ELSE
+					                        DISPLAY “This data cannot be emptied! Please try again.”
+					                    ENDIF
+			                            BREAK THE LOOP
+			                            ENDDO
+		 	                = “6” OR “8”:
+			                        DOWHILE (True)
+				                        PROMPT USER FOR newData
+				                        DISPLAY “Enter a new data for it"
+                                        IF (length of newData) == 6 THEN
+					                        BREAK THE LOOP
+				                        ELSE
+					                        DISPLAY “The "format" for Date is incorrect!”
+					                        DISPLAY “The format for date: NOV 11. Please try again”
+				                        ENDIF
+			                        BREAK THE LOOP
+			                        ENDDO
+			                = “7” OR “9”:
+			                        DOWHILE (True)
+				                        PROMPT USER FOR newData
+				                        DISPLAY “Enter a new data for it" (i.e. 10.00AM):”
+				                        IF (length of newData) == 7 THEN
+					                        BREAK THE LOOP
+                                        ELSE
+					                        DISPLAY “The "format" for time is incorrect!”
+					                        DISPLAY “The format for date:10.00AM. Please try again”
+				                        ENDIF
+			                        BREAK THE LOOP
+			                        ENDDO
+			                = “10”:
+			                        DOWHILE (True)
+				                        PROMPT USER FOR newData
+				                        DISPLAY “Enter a new data for it"
+                                        IF newData is not empty THEN
+					                        BREAK THE LOOP
+				                        ELSE
+					                        DISPLAY “This data cannot be emptied! Please try again.”
+				                        ENDIF
+			                        BREAK THE LOOP
+			                        ENDDO
+			                OTHERWISE
+			                        DISPLAY “Invalid input! (Option 1 - 10)”
+			                        DISPLAY “Please try again.”
+		            ENDDO
+		            SET list_in_list [choice – 1] = newData
+		            DISPLAY “The data has been modified.”
+                    DISPLAY “New data:”, list_in_list
+                    DISPLAY “Flight No:”, list_in_list[0]
+                    DISPLAY “Departure Airport:”, list_in_list[1], “-”, list_in_list[2]
+			        DISPLAY “Destination Airport:”, list_in_list[3], “-”, list_in_list[4]
+			        DISPLAY “Departure date and time:”, list_in_list[5],  list_in_list[6]
+			        DISPLAY “Return Date and time:”, list_in_list[7], list_in_list[8]
+			        DISPLAY “Price: RM”, list_in_list[9]
+		        ENDIF
+		    ENDIF
+		ENDLOOP
+		OPENFILE airline.txt FOR WRITE, schedule
+		LOOP row FROM first element TO last element IN new_master_airline, STEP 1
+			LOOP data FROM first element TO last element IN row, STEP 1
+				IF data == row[-1] THEN
+					WRITEFILE airline.txt, data
+				ELSE
+					WRITEFILE airline.txt, data + “,”
+				ENDIF
+			ENDLOOP
+			WRITEFILE airline.txt, “\n”
+		ENDLOOP
+		CLOSEFILE airline.txt
+    PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION delete_flight
+    PASS IN: nothing
+	OPENFILE airline.txt FOR READ, schedule
+    DECLARE VARIABLE schedule_list, count, num1, num2, num3, num4, space1, space2, space3, space4, exist
+    RETURN ALL LINE FROM schedule INTO A LIST schedule_list
+    PROMPT USER FOR flight_no
+    DISPLAY “Enter a flight no:”
+    TURN flight_no INTO UPPER CASE
+    DISPLAY “Departure”, “Return”
+    DISPLAY “Flight number:”, “From”, “To”, “Date”, “Time (GMT+8)”, “Date”, “Time (GMT+8), “Price”
+    SET count = 0
+    LOOP line FROM first element TO last element IN schedule_list, STEP 1
+        REMOVE ALL WHITESPACE AT THE RIGHT SIDE
+        RETURN A LIST OF THE WORDS IN THE STRING, USING “,” AS THE DELIMITER STRING
+        SET num1 = length of line[1]
+        SET num2 = length of line[2]
+        SET num3 = length of line[3]
+        SET num4 = length of line[4]
+            CALCULATE space
+        space1 = 16 – num1
+        space2 = 16 – num2
+        space3 = 16 – num3
+        space4 = 16 – num4
+        IF (flight_no == line[0]) THEN
+            DISPLAY “" " * 3 + line[0] + "     : " + (" " * space1)+ line[1]+ " - " + line[2] + (" " * space2) +
+                    "->" +(" " * space3) + line[3] + " - " + line[4] + (" " * space4) + line[5] + "    " + line[6] +
+                    "    |   " + line[7] + "    " + line[8] + "         RM " + line[9])
+            CALCULATE count
+                count = count + 1
+        ENDIF
+    ENDLOOP
+    IF count == 0 THEN
+	    DISPLAY “Flight not found”
+    IF count >=1 THEN
+		PROMPT USER FOR country_from, country_to
+		DISPLAY “Enter a country (Departure):”
+		DISPLAY “Enter a country (Destination);”
+		TURN country_from, country_to INTO UPPER CASE
+		READ country_from, country_to
+		SET exist = 0
+		LOOP line FROM first element TO last element IN schedule_list, STEP 1
+			REMOVE ALL WHITESPACE AT THE RIGHTSIDE
+			RETURN A LIST OF THE WORDS IN THE STRING, USING “,” AS THE DELIMITER STRING
+			IF (flight_no == line[0]) THEN
+				IF country_from == line[1] AND country_to == line[3] THEN
+					CALCULATE exist +=1
+                    DISPLAY “Are you sure you want to delete
+                    this flight?”
+                    DISPLAY line[0], “ : ”, line[1], “  -> ”, line[3]
+                    PROMPT USER FOR confirmation
+                    DISPLAY ““Y” for Yes, “N” for No:”
+                    TURN confirmation INTO UPPER CASE
+                    CASE OF (confirmation)
+						= “Y”:
+				    		OPENFILE airline.txt, schedule
+							LOOP line FROM first element TO last element IN schedule_list, STEP1
+					            IF flight_no AND country_from AND country_to NOT IN line.strip(“\n”)  THEN
+							        WRITEFILE airline.txt, line
+						        ENDIF
+					        ENDLOOP
+			   	      		CLOSEFILE airline.txt
+						= “N”:
+			    			DISPLAY “The modification is cancelled.”
+						OTHERWISE
+			   			    DISPLAY “Invalid input! Your process has been cancelled!”
+					    ENDIF
+			    ENDIF
+			ENDIF
+	    ENDLOOP
+	    IF exist == 0 THEN
+		    DISPLAY “Departure”, “Return”
+	        DISPLAY “Flight number:”, “From”, “To”, “Date”, “Time (GMT+8)”,“Date”, “Time (GMT+8), “Price”
+		    DISPLAY “Country not found!”
+		ENDIF
+	ENDIF
+    PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION modify_flight
+    PASS IN: nothing
+    DOWHILE (True)
+	    PROMPT USER FOR modify_choice
+	    DISPLAY “-------- Modify Option -------- new line
+                 Press [1] - to modify data new line
+                 Press [2] - to delete the flight new line
+                 Press [3] - go back new line
+                 Enter your choice (1 or 3):”
+	    CASE OF modify_choice
+		    = “1”: CALL: modify_data
+		           BREAK THE LOOP
+		    = “2”: CALL: delete_flight
+		           BREAK THE LOOP
+		    = “3”: BREAK THE LOOP
+			OTHERWISE
+		        DISPLAY “Incorrect input! Only 1 or 2, please try again!”
+		ENDIF
+	ENDDO
+	PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION record_1
+	PASS IN: nothing
+	DECLARE VARIABLE count, flights, content_listByLine
+	PROMPT USER FOR flight_number
+	DISPLAY “Enter a Flight No to search the flight (i.e. AMG009):”
+	READ flight_number
+	SET count = 0
+	OPENFILE airline.txt FOR READ, schedule
+	READFILE airline.txt, flights
+	SPLIT flights LINE BY LINE INTO A LIST, content_listByLine
+	CLOSEFILE airline.txt
+	LOOP data FROM first element TO last element IN content_listByLine, STEP 1
+		RETURN A LIST OF THE WORDS IN THE STRING, USING “,” AS THE DELIMITER STRING
+		IF data[0] == flight_number THEN
+		    DISPLAY “Flight No:”, list_in_list[0]
+		    DISPLAY “Departure Airport:”, list_in_list[1], “-”, list_in_list[2]
+		    DISPLAY “Destination Airport:”, list_in_list[3], “-”, list_in_list[4]
+		    DISPLAY “Departure date and time:”, list_in_list[5],  list_in_list[6]
+		    DISPLAY “Return Date and time:”, list_in_list[7], list_in_list[8]
+		    DISPLAY “Price: RM”, list_in_list[9]
+		    CALCULATE count
+			    count = count + 1
+		ENDIF
+	ENDLOOP
+	IF count == 0 THEN
+		DISPLAY “NO RECORD”
+	ENDIF
+	DISPLAY new line
+	PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION record_2
+	PASS IN: nothing
+	DECLARE VARIABLE transaction, record, content_listByline, master_list, booking_list, bookingdata
+	OPENFILE booking.txt FOR READ, transaction
+	READFILE booking.txt, record
+	SPLIT record LINE BY LINE INTO LIST, content_listByLine
+	CLOSEFILE booking.txt
+	SET master_list = []
+	LOOP data FROM first element TO last element IN booking_list, STEP 1
+		RETURN A LIST OF THE WORDS IN THE STRING, USING “,” AS THE DELIMITER STRING
+		PUT bookingdata INTO LIST master_list
+	ENDLOOP
+	LOOP list_in_list FROM first element TO last element IN master_list, STEP 1
+		DISPLAY “Flight no:”, list_in_list[1],
+		DISPLAY “From:”, list_in_list[2], “To:”, list_in_list[4], “|”, list_in_list[6], list_in_list[7]
+		DISPLAY “Booked by:”, list_in_list[0]
+	ENDLOOP
+	PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION record_3
+	PASS IN: nothing
+	DECLARE VARIABLE count, transaction, record, content_listByLine, total_ticket_sold, profit, no_of_transaction
+	DOWHILE (True)
+		DISPLAY “----------- Ticket Sold or Profit Earned -----------, new line"
+             	"Press [1] - Display profit for the particular transaction, new line"
+              	"Press [2] - Display total ticket sold and profit earned, new line"
+              	"Press [3] - Back to display record menu, new line”
+		PROMPT USER FOR choice
+		DISPLAY “Enter your choice (Option 1 - 3):”
+		READ choice
+		CASE OF choice
+		    = “1”: PROMPT USER FOR invoice_no
+		        DISPLAY “Enter the invoice number:”
+			    SET count = 0
+			    OPENFILE tickets_profit.txt FOR READ, transaction
+			  	READFILE booking.txt, record
+				SPLIT flights LINE BY LINE INTO LIST, content_listByLine
+			    CLOSEFILE booking.txt
+			    LOOP data FROM first element TO last element IN content_listByLine, STEP 1
+				    RETURN A LIST OF THE WORDS IN THE STRING, USING “:” AS THE DELIMITER STRING
+			  		IF data [-1] == invoice_no THEN
+						CALCULATE tickets_sold
+						    tickets_sold=int(data[13])+int(data[14])
+						DISPLAY “Invoice number:”, data [-1]
+						DISPLAY “Ticket Sold:”, tickets_sold
+						DISPLAY “Profit earned:”, data [-2]
+						CALCULATE count
+							count = count + 1
+					ENDIF
+			    ENDLOOP
+			    IF count == 0 THEN
+				    DISPLAY “The invoice number is not existed in the
+				    booking.txt”
+			    ENDIF
+		    = “2”: SET total_ticket_sold = 0
+			    SET profit = 0
+			    SET no_of_transaction = 0
+			    OPENFILE booking.txt FOR READ, transaction
+				READFILE booking.txt, record
+				SPLIT flights LINE BY LINE INTO LIST, content_listByLine
+			    CLOSEFILE booking.txt
+			    LOOP data FROM first element TO last element IN content_listByline, STEP 1
+				    CALCULATE number of transactions
+					    no_of_transaction += 1
+			        RETURN A LIST OF THE WORDS IN THE STRING, USING “,” AS THE DELIMITER STRING
+			        SET profit = data[-2]
+			        CALCULATE ticket_sold, total_profit
+				        Total_ticket_sold += int (data [13])+int(data[14])
+				        total_profit += int (profit [2:])
+		        ENDLOOP
+		        DISPLAY “The total number of transactions:”, no_of_transaction
+		        DISPLAY “The total ticket sold:”, total_ticket_sold
+		        DISPLAY “The total profit earned (Up to date): RM”, total_profit
+		    = “3”: CALL: display_record
+		           BREAK THE LOOP
+		    OTHERWISE
+		        DISPLAY “Invalid input! Please try again!”
+		    ENDIF
+    ENDDO
+    PASS OUT: nothing
+ENDFUNCTION
+
+FUNCTION option4
+	PASS IN: admin, member
+	DECLARE VARIABLE count, c
+	SET count = 0
+	LOOP i FROM 1 TO 4, STEP 1
+		PROMPT USER FOR acc, password
+		DISPLAY “Please enter your username:”
+		DISPLAY “Please insert your password”
+		SET c = CALL: check (acc, password)
+		CASE OF c
+			= 0: DISPLAY “Welcome back Admin!”
+			     SET count = 1
+  			     BREAK THE LOOP
+			=1: DISPLAY “Login Succeed”
+			    SET count = 2
+			    BREAK THE LOOP
+			OTHERWISE
+			    DISPLAY “Incorrect username or password”
+			    IF (i<3) THEN
+				    DISPLAY “You still have another”, (3-i), “change!!!”
+			    ELSE
+				    DISPLAY “You are unable to login, please try later”
+			    ENDIF
+	ENDLOOP
+	IF count == 1THEN
+		CALL: admin (display_schedule)
+		CALL: main_menu
+	ELSE
+		CALL: member (display_schedule, acc)
+		CALL: main_menu
+	ENDIF
+	PASS OUT: nothing
+ENDFUNCTION
+
